@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn Job Dashboard</title>
+  <style>
+    :root {
+      --primary: #0a66c2;
+      --primary-hover: #004182;
+      --bg: #f3f2ef;
+      --card-bg: #ffffff;
+      --text: #191919;
+      --text-muted: #666666;
+      --success: #057642;
+      --success-bg: #dcedc8;
+      --danger: #b91c1c;
+      --danger-bg: #fee2e2;
+      --danger-text: #b91c1c;
+      --warn: #92400e;
+      --warn-bg: #fef3c7;
+      --border: rgba(0,0,0,0.1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0; padding: 0;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--card-bg);
+      padding: 0.85rem 2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky; top: 0; z-index: 50;
+      gap: 1rem;
+    }
+    h1 { margin: 0; font-size: 1.35rem; color: var(--primary); }
+    .header-right { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+    .stats { font-size: 0.82rem; color: var(--text-muted); display: flex; gap: 0.6rem; }
+    .stat-new     { color: var(--primary); font-weight: 700; }
+    .stat-applied { color: var(--success);  font-weight: 700; }
+    .stat-rejected{ color: var(--danger);   font-weight: 700; }
+
+    .btn-scrape {
+      background: linear-gradient(135deg, #0a66c2, #0052a3);
+      color: #fff;
+      border: none;
+      border-radius: 2rem;
+      padding: 0.48rem 1.1rem;
+      font-weight: 700;
+      font-size: 0.84rem;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 0.35rem;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 2px 8px rgba(10,102,194,.35);
+      white-space: nowrap;
+    }
+    .btn-scrape:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(10,102,194,.4); }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; padding: 0 2rem;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      padding: 0.9rem 1.1rem;
+      cursor: pointer; font-weight: 600; font-size: 0.88rem;
+      color: var(--text-muted);
+      border-bottom: 3px solid transparent;
+      transition: color 0.15s; user-select: none;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab.tab-rejected.active { color: var(--danger); border-bottom-color: var(--danger); }
+    .tab-badge {
+      background: rgba(0,0,0,0.08); border-radius: 999px;
+      font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.42rem;
+      min-width: 1.15rem; text-align: center;
+    }
+    .tab.active .tab-badge { background: var(--primary); color: #fff; }
+    .tab.tab-rejected.active .tab-badge { background: var(--danger); color: #fff; }
+
+    /* ── Job grid ── */
+    main {
+      max-width: 1000px; margin: 2rem auto; padding: 0 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(295px, 1fr));
+      gap: 1.4rem;
+    }
+    .job-card {
+      background: var(--card-bg); border-radius: 10px;
+      padding: 1.3rem;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+      display: flex; flex-direction: column;
+      transition: transform 0.2s, box-shadow 0.2s;
+      animation: fadeIn 0.22s ease both;
+    }
+    .job-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.13); transform: translateY(-2px); }
+    .job-card.applied  { opacity: 0.62; background: var(--bg); }
+    .job-card.rejected { opacity: 0.52; background: #fff8f8; border-left: 3px solid var(--danger); }
+
+    /* profile tag chip */
+    .profile-chip {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      font-size: 0.68rem; font-weight: 700;
+      padding: 0.15rem 0.55rem; border-radius: 999px;
+      margin-bottom: 0.5rem; width: fit-content;
+    }
+    .profile-chip.mernstack  { background: #dbeafe; color: #1d4ed8; }
+    .profile-chip.dataanalyst{ background: #dcfce7; color: #166534; }
+    .profile-chip.unknown    { background: #f1f5f9; color: #64748b; }
+
+    .job-title    { font-size: 1.02rem; font-weight: 700; margin: 0 0 0.35rem; }
+    .job-company  { font-size: 0.9rem;  margin: 0 0 0.2rem; }
+    .job-location { font-size: 0.8rem;  color: var(--text-muted); margin: 0 0 0.85rem; }
+    .job-time     { font-size: 0.76rem; color: var(--success); margin-top: auto; margin-bottom: 0.85rem; font-weight: 600; }
+    .actions      { display: flex; gap: 0.45rem; margin-top: auto; flex-wrap: wrap; }
+    .btn {
+      flex: 1; padding: 0.42rem 0.65rem; border: none; border-radius: 2rem;
+      font-weight: 600; cursor: pointer; text-align: center;
+      transition: background 0.2s, transform 0.1s; font-size: 0.8rem; min-width: 0;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-apply   { background: var(--primary);     color: #fff; }
+    .btn-apply:hover { background: var(--primary-hover); }
+    .btn-applied { background: var(--success-bg);  color: var(--success); cursor: default; pointer-events: none; }
+    .btn-reject  { background: var(--danger-bg);   color: var(--danger-text); flex: 0 0 auto; }
+    .btn-reject:hover  { background: #fecaca; }
+    .btn-remove  { background: var(--warn-bg);     color: var(--warn); flex: 0 0 auto; }
+    .btn-remove:hover  { background: #fde68a; }
+    .btn-restore { background: #ede9fe; color: #5b21b6; }
+    .btn-restore:hover { background: #ddd6fe; }
+
+    .loader, .empty-state {
+      text-align: center; padding: 3rem 1rem;
+      grid-column: 1 / -1; color: var(--text-muted);
+    }
+    .empty-state .emoji { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
+    .empty-state p { margin: 0; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0.7rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 53px;   /* just below tabs */
+      z-index: 40;
+    }
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 180px;
+      max-width: 320px;
+    }
+    .search-wrap svg {
+      position: absolute;
+      left: 0.65rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 15px; height: 15px;
+      fill: none;
+      stroke: var(--text-muted);
+      stroke-width: 2;
+      pointer-events: none;
+    }
+    #search-input {
+      width: 100%;
+      padding: 0.42rem 0.7rem 0.42rem 2.1rem;
+      border: 1px solid var(--border);
+      border-radius: 2rem;
+      font-size: 0.82rem;
+      outline: none;
+      background: var(--bg);
+      color: var(--text);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    #search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(10,102,194,0.12);
+      background: #fff;
+    }
+    .time-chips {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+    .chip {
+      padding: 0.3rem 0.75rem;
+      border-radius: 2rem;
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--text-muted);
+      transition: all 0.15s;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .chip:hover { border-color: var(--primary); color: var(--primary); }
+    .chip.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .chip.hot-chip.active   { background: #ef4444; border-color: #ef4444; }
+    .chip.today-chip.active { background: #f97316; border-color: #f97316; }
+    .chip.week-chip.active  { background: #0a66c2; border-color: #0a66c2; }
+    .filter-result-note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    /* ── Priority / Hot badges on cards ── */
+    .card-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.45rem;
+    }
+    .hot-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.18rem;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      flex-shrink: 0;
+      animation: pulse 1.8s infinite;
+    }
+    .hot-badge.fire  { background: #fef2f2; color: #ef4444; border: 1px solid #fca5a5; }
+    .hot-badge.today { background: #fff7ed; color: #f97316; border: 1px solid #fdba74; }
+    .hot-badge.week  { background: #eff6ff; color: #3b82f6; border: 1px solid #93c5fd; }
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.7; }
+    }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 2rem; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1e293b; color: #fff;
+      padding: 0.62rem 1.35rem; border-radius: 2rem;
+      font-size: 0.87rem; font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0,0,0,.25);
+      transition: transform 0.3s ease; z-index: 200; white-space: nowrap;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Modal overlay ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.48); z-index: 100;
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card-bg); border-radius: 16px;
+      width: 100%; max-width: 700px; max-height: 92vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 24px 64px rgba(0,0,0,.32);
+      animation: modalIn 0.22s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.94) translateY(12px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-header {
+      padding: 1.2rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-header h2 { margin: 0; font-size: 1.08rem; }
+    .modal-close {
+      background: none; border: none; font-size: 1.35rem;
+      cursor: pointer; color: var(--text-muted);
+      padding: 0.2rem 0.4rem; border-radius: 4px;
+    }
+    .modal-close:hover { background: var(--bg); color: var(--text); }
+    .modal-body {
+      padding: 1.3rem 1.5rem; overflow-y: auto; flex: 1;
+      display: flex; flex-direction: column; gap: 1.4rem;
+    }
+
+    /* ── Profile selector ── */
+    .section-label {
+      font-size: 0.75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted); margin: 0 0 0.65rem;
+    }
+    .profile-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;
+    }
+    .profile-card {
+      border: 2px solid var(--border); border-radius: 12px;
+      padding: 1rem 1.1rem; cursor: pointer;
+      transition: border-color 0.18s, background 0.18s, transform 0.15s;
+      display: flex; flex-direction: column; gap: 0.25rem;
+    }
+    .profile-card:hover { border-color: var(--primary); transform: translateY(-1px); }
+    .profile-card.selected {
+      border-color: var(--primary);
+      background: #f0f7ff;
+      box-shadow: 0 0 0 3px rgba(10,102,194,0.18);
+    }
+    .profile-card .pc-icon { font-size: 1.8rem; line-height: 1; }
+    .profile-card .pc-label { font-weight: 700; font-size: 0.95rem; }
+    .profile-card .pc-count { font-size: 0.78rem; color: var(--text-muted); }
+    .profile-card.selected .pc-count { color: var(--primary); }
+
+    /* ── URL list inside selected profile ── */
+    .url-section { display: none; }
+    .url-section.visible { display: block; }
+    .url-list { display: flex; flex-direction: column; gap: 0.35rem; max-height: 200px; overflow-y: auto; }
+    .url-row {
+      display: flex; align-items: center; gap: 0.45rem;
+      background: var(--bg); border-radius: 6px;
+      padding: 0.35rem 0.6rem;
+    }
+    .url-row span {
+      flex: 1; font-size: 0.75rem; color: var(--text-muted);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .url-del {
+      background: none; border: none; cursor: pointer;
+      color: var(--danger-text); font-size: 0.9rem;
+      padding: 0.08rem 0.28rem; border-radius: 3px; flex-shrink: 0;
+    }
+    .url-del:hover { background: var(--danger-bg); }
+    .add-url-row { display: flex; gap: 0.45rem; margin-top: 0.4rem; }
+    .add-url-row input {
+      flex: 1; padding: 0.42rem 0.7rem;
+      border: 1px solid var(--border); border-radius: 6px;
+      font-size: 0.8rem; outline: none;
+    }
+    .add-url-row input:focus { border-color: var(--primary); }
+    .btn-add-url {
+      background: var(--primary); color: #fff; border: none;
+      border-radius: 6px; padding: 0.42rem 0.85rem;
+      font-weight: 700; font-size: 0.8rem; cursor: pointer; white-space: nowrap;
+    }
+    .btn-add-url:hover { background: var(--primary-hover); }
+    .btn-save-urls {
+      width: 100%; background: #f0f7ff; color: var(--primary);
+      border: 1px solid var(--primary); border-radius: 8px;
+      padding: 0.5rem; font-weight: 700; font-size: 0.82rem;
+      cursor: pointer; transition: background 0.15s; margin-top: 0.55rem;
+    }
+    .btn-save-urls:hover { background: #dbeafe; }
+
+    /* ── Warning banner (clear jobs) ── */
+    .clear-warning {
+      display: none; background: #fffbeb;
+      border: 1px solid #fcd34d; border-radius: 8px;
+      padding: 0.75rem 1rem; font-size: 0.83rem; color: #78350f; line-height: 1.5;
+    }
+    .clear-warning.visible { display: block; }
+
+    /* ── Scrape action button ── */
+    .scrape-actions { display: flex; gap: 0.7rem; }
+    .btn-start-scrape {
+      flex: 1; background: linear-gradient(135deg, #0a66c2, #0052a3); color: #fff;
+      border: none; border-radius: 8px; padding: 0.62rem;
+      font-weight: 700; font-size: 0.88rem; cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-start-scrape:hover { opacity: 0.9; }
+    .btn-start-scrape:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-stop-scrape {
+      background: var(--danger-bg); color: var(--danger-text);
+      border: none; border-radius: 8px; padding: 0.62rem 1rem;
+      font-weight: 700; font-size: 0.88rem; cursor: pointer;
+      display: none;
+    }
+    .btn-stop-scrape:hover { background: #fecaca; }
+
+    /* ── Status box ── */
+    .scrape-status-box {
+      background: var(--bg); border-radius: 10px; padding: 1rem;
+      display: none; flex-direction: column; gap: 0.75rem;
+    }
+    .scrape-status-box.visible { display: flex; }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 0.78rem; font-weight: 700;
+      padding: 0.22rem 0.7rem; border-radius: 999px; width: fit-content;
+    }
+    .status-badge.idle    { background: #f1f5f9; color: #64748b; }
+    .status-badge.waiting { background: #fef3c7; color: #92400e; }
+    .status-badge.running { background: #dbeafe; color: #1d4ed8; }
+    .status-badge.done    { background: #dcfce7; color: #166534; }
+    .status-badge.error   { background: var(--danger-bg); color: var(--danger-text); }
+
+    /* ── Login banner ── */
+    .login-prompt {
+      display: none; background: #fffbeb;
+      border: 1px solid #fcd34d; border-radius: 8px;
+      padding: 0.85rem 1rem; gap: 0.7rem; align-items: center;
+    }
+    .login-prompt.visible { display: flex; }
+    .login-prompt p { margin: 0; font-size: 0.82rem; flex: 1; color: #78350f; font-weight: 500; }
+    .btn-confirm-login {
+      background: #16a34a; color: #fff; border: none;
+      border-radius: 8px; padding: 0.48rem 0.95rem;
+      font-weight: 700; font-size: 0.82rem; cursor: pointer; white-space: nowrap;
+    }
+    .btn-confirm-login:hover { background: #15803d; }
+
+    /* ── Log console ── */
+    .log-console {
+      background: #0f172a; border-radius: 8px;
+      padding: 0.7rem 0.85rem; max-height: 175px; overflow-y: auto;
+      font-family: 'Menlo','Consolas',monospace; font-size: 0.7rem;
+      color: #94a3b8; line-height: 1.65;
+    }
+    .log-line      { color: #e2e8f0; }
+    .log-line.warn { color: #fbbf24; }
+    .log-line.ok   { color: #4ade80; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>💼 LinkedIn Job Dashboard</h1>
+    <div class="header-right">
+      <div class="stats">
+        <span><span class="stat-new" id="count-new">0</span> New</span>·
+        <span><span class="stat-applied" id="count-applied">0</span> Applied</span>·
+        <span><span class="stat-rejected" id="count-rejected">0</span> Rejected</span>
+      </div>
+      <button class="btn-scrape" onclick="openScrapeModal()">🔄 Scrape Jobs</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active"      id="tab-new"      onclick="filterJobs('new')">New <span class="tab-badge" id="badge-new">0</span></div>
+    <div class="tab"             id="tab-applied"  onclick="filterJobs('applied')">Applied <span class="tab-badge" id="badge-applied">0</span></div>
+    <div class="tab tab-rejected" id="tab-rejected" onclick="filterJobs('rejected')">Rejected <span class="tab-badge" id="badge-rejected">0</span></div>
+  </div>
+
+  <!-- ── Filter bar ── -->
+  <div class="filter-bar" id="filter-bar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+      <input type="text" id="search-input" placeholder="Search jobs, companies..." oninput="renderJobs()" />
+    </div>
+    <div class="time-chips">
+      <span class="chip hot-chip"   id="chip-hot"   onclick="setTimeFilter('hot')"   title="Posted in the last hour">🔥 Hot</span>
+      <span class="chip today-chip" id="chip-today" onclick="setTimeFilter('today')" title="Posted today (≤24h)">⚡ Today</span>
+      <span class="chip week-chip"  id="chip-week"  onclick="setTimeFilter('week')"  title="Past 7 days">📅 Week</span>
+      <span class="chip"            id="chip-month" onclick="setTimeFilter('month')" title="Past 30 days">🗓 Month</span>
+      <span class="chip"            id="chip-2mo"   onclick="setTimeFilter('2mo')"   title="Past 2 months">📆 2 Months</span>
+      <span class="chip active"     id="chip-all"   onclick="setTimeFilter('all')"   title="Show all">All</span>
+    </div>
+    <span class="filter-result-note" id="filter-note"></span>
+  </div>
+
+  <main id="job-container">
+    <div class="loader">Loading jobs...</div>
+  </main>
+
+  <!-- ── Scrape Modal ── -->
+  <div class="modal-overlay" id="scrape-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🔄 Scrape LinkedIn Jobs</h2>
+        <button class="modal-close" onclick="closeScrapeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Step 1: Choose profile -->
+        <div>
+          <p class="section-label">Step 1 — Choose a Job Profile</p>
+          <div class="profile-grid" id="profile-grid">
+            <div class="loader" style="grid-column:1/-1;padding:0.5rem">Loading profiles...</div>
+          </div>
+        </div>
+
+        <!-- Step 2: URL list (shown after profile selected) -->
+        <div class="url-section" id="url-section">
+          <p class="section-label">Step 2 — Search URLs <span id="url-profile-name"></span></p>
+          <div class="url-list" id="url-list"></div>
+          <div class="add-url-row">
+            <input type="text" id="new-url-input" placeholder="Paste a LinkedIn jobs search URL..." />
+            <button class="btn-add-url" onclick="addUrl()">+ Add</button>
+          </div>
+          <button class="btn-save-urls" onclick="saveUrls()">💾 Save URLs</button>
+        </div>
+
+        <!-- Clear-jobs warning -->
+        <div class="clear-warning" id="clear-warning">
+          ⚠️ <strong>Heads-up:</strong> Starting a scrape will <strong>delete all existing "New" jobs</strong> and replace them with fresh results for the selected profile. Applied &amp; Rejected jobs are kept safe.
+        </div>
+
+        <!-- Step 3: Start -->
+        <div>
+          <p class="section-label">Step 3 — Start Scraping</p>
+          <div class="scrape-actions">
+            <button class="btn-start-scrape" id="btn-start" onclick="startScrape()" disabled>
+              🚀 Start Scraping
+            </button>
+            <button class="btn-stop-scrape" id="btn-stop" onclick="stopScrape()">⏹ Stop</button>
+          </div>
+        </div>
+
+        <!-- Status & live log -->
+        <div class="scrape-status-box" id="status-box">
+          <div id="status-badge" class="status-badge idle">⚪ Idle</div>
+
+          <div class="login-prompt" id="login-prompt">
+            <p>🌐 Browser is open — <strong>log into LinkedIn</strong> then click when ready.</p>
+            <button class="btn-confirm-login" onclick="confirmLogin()">✅ I'm Logged In</button>
+          </div>
+
+          <div class="log-console" id="log-console"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    // ─── State ────────────────────────────────────────────────────────────────
+    let allJobs       = [];
+    let currentFilter = 'new';
+    let timeFilter    = 'all';   // 'hot' | 'today' | 'week' | 'month' | '2mo' | 'all'
+    let profiles      = {};       // loaded from /api/config
+    let selectedProfile = null;   // key of selected profile
+    let profileUrls   = [];       // editable copy of selected profile's URLs
+    let pollInterval  = null;
+    let lastLogCount  = 0;
+
+    // ─── Time parsing ─────────────────────────────────────────────────────────
+    // Convert LinkedIn relative time strings like "2 hours ago" → hours (number)
+    function parseTimeToHours(str) {
+      if (!str) return Infinity;
+      str = str.toLowerCase().trim();
+      const m = str.match(/(\d+)\s*(second|minute|hour|day|week|month|year)/);
+      if (!m) return Infinity;
+      const n = parseInt(m[1]);
+      switch (m[2]) {
+        case 'second':  return n / 3600;
+        case 'minute':  return n / 60;
+        case 'hour':    return n;
+        case 'day':     return n * 24;
+        case 'week':    return n * 24 * 7;
+        case 'month':   return n * 24 * 30;
+        case 'year':    return n * 24 * 365;
+        default: return Infinity;
+      }
+    }
+
+    // Return priority label based on age in hours
+    function getPriority(hours) {
+      if (hours <= 1)  return 'fire';   // 🔥 Hot
+      if (hours <= 24) return 'today';  // ⚡ Today
+      if (hours <= 168) return 'week';  // 📅 Week
+      return null;
+    }
+
+    function setTimeFilter(val) {
+      timeFilter = val;
+      ['hot','today','week','month','2mo','all'].forEach(k => {
+        const el = document.getElementById(`chip-${k}`);
+        if (el) el.classList.toggle('active', k === val);
+      });
+      renderJobs();
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+    function updateCounts() {
+      const n = allJobs.filter(j => !j.applied && !j.rejected).length;
+      const a = allJobs.filter(j =>  j.applied && !j.rejected).length;
+      const r = allJobs.filter(j =>  j.rejected).length;
+      ['new','applied','rejected'].forEach(k => {
+        const v = k==='new'?n : k==='applied'?a : r;
+        document.getElementById(`count-${k}`).textContent = v;
+        document.getElementById(`badge-${k}`).textContent  = v;
+      });
+    }
+
+    // ─── Jobs ─────────────────────────────────────────────────────────────────
+    async function fetchJobs() {
+      try {
+        const res = await fetch('/api/jobs');
+        allJobs = (await res.json()).map(j => ({
+          ...j,
+          id: j.id || j.link.split('-').pop() || Math.random().toString(36).substr(2,9),
+          rejected: j.rejected || false,
+          profile: j.profile || null
+        }));
+        updateCounts(); renderJobs();
+      } catch { document.getElementById('job-container').innerHTML = '<div class="loader">Error loading jobs.</div>'; }
+    }
+
+    function filterJobs(type) {
+      currentFilter = type;
+      ['new','applied','rejected'].forEach(t =>
+        document.getElementById(`tab-${t}`).classList.toggle('active', t===type));
+      renderJobs();
+    }
+
+    function renderJobs() {
+      const container  = document.getElementById('job-container');
+      const searchVal  = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+      container.innerHTML = '';
+
+      // 1. Tab filter
+      let list = allJobs.filter(j =>
+        currentFilter==='applied'  ? (j.applied && !j.rejected) :
+        currentFilter==='rejected' ?  j.rejected :
+                                     (!j.applied && !j.rejected));
+      updateCounts();
+
+      // 2. Search filter
+      if (searchVal) {
+        list = list.filter(j =>
+          (j.title    || '').toLowerCase().includes(searchVal) ||
+          (j.company  || '').toLowerCase().includes(searchVal) ||
+          (j.location || '').toLowerCase().includes(searchVal));
+      }
+
+      // 3. Time filter (only on New tab; skip for Applied/Rejected since time may be stale)
+      const maxHours = { hot: 1, today: 24, week: 168, month: 720, '2mo': 1440, all: Infinity };
+      const limit = maxHours[timeFilter] ?? Infinity;
+      if (currentFilter === 'new' && limit !== Infinity) {
+        list = list.filter(j => parseTimeToHours(j.time) <= limit);
+      }
+
+      // 4. Sort: hottest first (lowest hours = most recent)
+      if (currentFilter === 'new') {
+        list = list.slice().sort((a, b) => parseTimeToHours(a.time) - parseTimeToHours(b.time));
+      }
+
+      // Update filter note
+      const note = document.getElementById('filter-note');
+      if (note) note.textContent = list.length ? `${list.length} job${list.length!==1?'s':''} shown` : '';
+
+      if (!list.length) {
+        const emoji = {new:'🔍',applied:'📨',rejected:'🗑️'}[currentFilter];
+        const msgs  = {
+          new: searchVal || timeFilter!=='all' ? 'No jobs match your filters.' : 'No new jobs found.',
+          applied: 'No applied jobs yet.',
+          rejected: 'No rejected jobs.'
+        };
+        container.innerHTML = `<div class="empty-state"><span class="emoji">${emoji}</span><p>${msgs[currentFilter]}</p></div>`;
+        return;
+      }
+
+      list.forEach((job, idx) => {
+        const card = document.createElement('div');
+        card.style.animationDelay = `${idx * 0.03}s`;
+        card.className = `job-card ${job.applied?'applied':''} ${job.rejected?'rejected':''}`;
+
+        // Profile chip
+        const chipClass = job.profile || 'unknown';
+        const profileEntry = job.profile ? profiles[job.profile] : null;
+        const chipLabel = profileEntry
+          ? `${profileEntry.icon || ''} ${profileEntry.label || job.profile}`.trim()
+          : (job.profile || '🔗 General');
+        const chipHTML = `<span class="profile-chip ${chipClass}">${chipLabel}</span>`;
+
+        // Hot badge
+        const hours    = parseTimeToHours(job.time);
+        const priority = getPriority(hours);
+        const hotMap   = {
+          fire:  '🔥 Hot',
+          today: '⚡ Today',
+          week:  '📅 New'
+        };
+        const hotBadge = priority
+          ? `<span class="hot-badge ${priority}">${hotMap[priority]}</span>`
+          : '';
+
+        let actionsHTML = '';
+        if (currentFilter === 'new') {
+          actionsHTML = `
+            <button class="btn btn-apply"  onclick="applyToJob('${job.id}','${job.link}')">Apply Now</button>
+            <button class="btn btn-reject" onclick="rejectJob('${job.id}',false)" title="Not interested">✕ Reject</button>`;
+        } else if (currentFilter === 'applied') {
+          actionsHTML = `
+            <div class="btn btn-applied">Applied ✓</div>
+            <button class="btn btn-remove" onclick="rejectJob('${job.id}',true)" title="Remove from applied">✕ Remove</button>`;
+        } else {
+          actionsHTML = `<button class="btn btn-restore" onclick="restoreJob('${job.id}')">↩ Restore</button>`;
+        }
+
+        card.innerHTML = `
+          <div class="card-top-row">
+            ${chipHTML}
+            ${hotBadge}
+          </div>
+          <h3 class="job-title">${job.title}</h3>
+          <p class="job-company">${job.company}</p>
+          <p class="job-location">${job.location}</p>
+          ${job.time ? `<p class="job-time">${job.time}</p>` : ''}
+          <div class="actions">${actionsHTML}</div>`;
+        container.appendChild(card);
+      });
+    }
+
+    async function applyToJob(id, link) {
+      window.open(link, '_blank');
+      const idx = allJobs.findIndex(j => j.id===id);
+      if (idx>-1) { allJobs[idx].applied=true; allJobs[idx].rejected=false; }
+      updateCounts(); renderJobs(); showToast('✅ Marked as applied!');
+      await fetch('/api/jobs/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+    }
+    async function rejectJob(id, wasApplied) {
+      const idx = allJobs.findIndex(j => j.id===id);
+      if (idx>-1) { allJobs[idx].rejected=true; allJobs[idx].applied=false; }
+      updateCounts(); renderJobs();
+      showToast(wasApplied ? '🗑️ Removed from applied.' : '🚫 Job rejected.');
+      await fetch('/api/jobs/reject',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+    }
+    async function restoreJob(id) {
+      const idx = allJobs.findIndex(j => j.id===id);
+      if (idx>-1) { allJobs[idx].rejected=false; allJobs[idx].applied=false; }
+      updateCounts(); renderJobs(); showToast('↩️ Job restored to New Jobs.');
+      await fetch('/api/jobs/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+    }
+
+    // ─── Scrape Modal ─────────────────────────────────────────────────────────
+    async function openScrapeModal() {
+      document.getElementById('scrape-modal').classList.add('open');
+      await loadProfiles();
+      pollScrapeStatus(); // check if something's already running
+    }
+    function closeScrapeModal() {
+      document.getElementById('scrape-modal').classList.remove('open');
+      stopPolling();
+    }
+    document.getElementById('scrape-modal').addEventListener('click', e => {
+      if (e.target===e.currentTarget) closeScrapeModal();
+    });
+
+    // ─── Profile loading ──────────────────────────────────────────────────────
+    async function loadProfiles() {
+      const res  = await fetch('/api/config');
+      const conf = await res.json();
+      profiles   = conf.profiles || {};
+      renderProfileGrid();
+    }
+
+    function renderProfileGrid() {
+      const grid = document.getElementById('profile-grid');
+      const keys = Object.keys(profiles);
+      if (!keys.length) {
+        grid.innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);font-size:0.85rem">No profiles found in config.json.</p>';
+        return;
+      }
+      grid.innerHTML = keys.map(key => {
+        const p = profiles[key];
+        const sel = selectedProfile===key ? 'selected' : '';
+        return `
+          <div class="profile-card ${sel}" id="pc-${key}" onclick="selectProfile('${key}')">
+            <span class="pc-icon">${p.icon || '📋'}</span>
+            <span class="pc-label">${p.label}</span>
+            <span class="pc-count">${(p.urls||[]).length} URLs</span>
+          </div>`;
+      }).join('');
+    }
+
+    function selectProfile(key) {
+      selectedProfile = key;
+      profileUrls = [...(profiles[key].urls || [])];
+
+      // Update card styles
+      document.querySelectorAll('.profile-card').forEach(el =>
+        el.classList.toggle('selected', el.id === `pc-${key}`)
+      );
+
+      // Show URL section
+      document.getElementById('url-profile-name').textContent = `— ${profiles[key].label}`;
+      renderUrlList();
+      document.getElementById('url-section').classList.add('visible');
+      document.getElementById('clear-warning').classList.add('visible');
+      document.getElementById('btn-start').disabled = false;
+    }
+
+    // ─── URL management ───────────────────────────────────────────────────────
+    function renderUrlList() {
+      const list = document.getElementById('url-list');
+      if (!profileUrls.length) {
+        list.innerHTML = '<p style="font-size:0.8rem;color:var(--text-muted);margin:0">No URLs yet. Add one below.</p>';
+        return;
+      }
+      list.innerHTML = profileUrls.map((url, i) => `
+        <div class="url-row">
+          <span title="${url}">${url}</span>
+          <button class="url-del" onclick="deleteUrl(${i})">✕</button>
+        </div>`).join('');
+    }
+
+    function addUrl() {
+      const input = document.getElementById('new-url-input');
+      const url   = input.value.trim();
+      if (!url) return;
+      if (!url.startsWith('http')) { showToast('⚠️ Enter a valid URL'); return; }
+      profileUrls.push(url);
+      input.value = '';
+      renderUrlList();
+      // Update count in card
+      if (profiles[selectedProfile]) profiles[selectedProfile].urls = profileUrls;
+      renderProfileGrid();
+    }
+    document.getElementById('new-url-input').addEventListener('keydown', e => { if(e.key==='Enter') addUrl(); });
+
+    function deleteUrl(i) {
+      profileUrls.splice(i, 1);
+      renderUrlList();
+      if (profiles[selectedProfile]) profiles[selectedProfile].urls = profileUrls;
+      renderProfileGrid();
+    }
+
+    async function saveUrls() {
+      if (!selectedProfile) return;
+      const res = await fetch(`/api/config/profile/${selectedProfile}/urls`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ urls: profileUrls })
+      });
+      showToast(res.ok ? '✅ URL list saved!' : '❌ Failed to save URLs');
+    }
+
+    // ─── Scraper control ──────────────────────────────────────────────────────
+    async function startScrape() {
+      if (!selectedProfile) { showToast('⚠️ Select a profile first'); return; }
+
+      await saveUrls();
+
+      const res = await fetch('/api/scrape/start', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ profile: selectedProfile })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        showToast('❌ ' + err.error);
+        return;
+      }
+
+      document.getElementById('status-box').classList.add('visible');
+      document.getElementById('btn-start').disabled = true;
+      document.getElementById('btn-stop').style.display = '';
+      setStatusBadge('waiting');
+      lastLogCount = 0;
+      document.getElementById('log-console').innerHTML = '';
+      startPolling();
+      showToast(`🚀 Scraping "${profiles[selectedProfile].label}"...`);
+    }
+
+    async function stopScrape() {
+      await fetch('/api/scrape/stop', {method:'POST'});
+      stopPolling();
+      setStatusBadge('idle');
+      document.getElementById('btn-start').disabled = false;
+      document.getElementById('btn-stop').style.display = 'none';
+      document.getElementById('login-prompt').classList.remove('visible');
+      showToast('🛑 Scraping stopped.');
+    }
+
+    async function confirmLogin() {
+      const res = await fetch('/api/scrape/confirm', {method:'POST'});
+      if (res.ok) {
+        document.getElementById('login-prompt').classList.remove('visible');
+        setStatusBadge('running');
+        showToast('✅ Confirmed! Scraping in progress...');
+      }
+    }
+
+    function startPolling() { stopPolling(); pollInterval = setInterval(pollScrapeStatus, 1200); }
+    function stopPolling()  { if (pollInterval) { clearInterval(pollInterval); pollInterval=null; } }
+
+    async function pollScrapeStatus() {
+      let data;
+      try { data = (await fetch('/api/scrape/status')).json && await (await fetch('/api/scrape/status')).json(); }
+      catch { return; }
+
+      const { status, logs } = data;
+
+      if (status !== 'idle') document.getElementById('status-box').classList.add('visible');
+      setStatusBadge(status);
+
+      const lp = document.getElementById('login-prompt');
+      status === 'waiting-login' ? lp.classList.add('visible') : lp.classList.remove('visible');
+
+      const logEl = document.getElementById('log-console');
+      if (logs.length > lastLogCount) {
+        logs.slice(lastLogCount).forEach(line => {
+          const div = document.createElement('div');
+          div.className = 'log-line' +
+            (line.startsWith('⚠️') ? ' warn' :
+             line.startsWith('✅') || line.includes('Finished') || line.includes('Saved') ? ' ok' : '');
+          div.textContent = line;
+          logEl.appendChild(div);
+        });
+        logEl.scrollTop = logEl.scrollHeight;
+        lastLogCount = logs.length;
+      }
+
+      if (status === 'done') {
+        stopPolling();
+        document.getElementById('btn-start').disabled = false;
+        document.getElementById('btn-stop').style.display = 'none';
+        showToast(`🎉 Done! Added ${data.newCount} new job${data.newCount!==1?'s':''}.`);
+        await fetchJobs();
+        await loadProfiles();
+      }
+      if (status === 'error') {
+        stopPolling();
+        document.getElementById('btn-start').disabled = false;
+        document.getElementById('btn-stop').style.display = 'none';
+        showToast('❌ Scraping failed. Check the log.');
+      }
+    }
+
+    function setStatusBadge(status) {
+      const badge = document.getElementById('status-badge');
+      const map = {
+        idle:           ['idle',    '⚪ Idle'],
+        'waiting-login':['waiting', '🟡 Waiting for Login'],
+        running:        ['running', '🔵 Scraping...'],
+        done:           ['done',    '🟢 Done'],
+        error:          ['error',   '🔴 Error'],
+      };
+      const [cls, text] = map[status] || map.idle;
+      badge.className = `status-badge ${cls}`;
+      badge.textContent = text;
+    }
+
+    // ─── Init ─────────────────────────────────────────────────────────────────
+    // Load profiles first so chips render correctly, then load jobs
+    loadProfiles().then(() => fetchJobs());
+  </script>
+</body>
+</html>

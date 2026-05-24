@@ -1,0 +1,67 @@
+{
+  "profiles": {
+    "mernstack": {
+      "label": "MERN Stack",
+      "icon": "🧑‍💻",
+      "urls": [
+        "https://www.linkedin.com/jobs/search/?currentJobId=4414109943&keywords=react&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?currentJobId=4414113727&keywords=mern%20stack&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?currentJobId=4414113727&keywords=react%20native&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?currentJobId=4410396423&keywords=react%20nodejs&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react&location=Bengaluru&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react+node&location=Kochi&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react&location=Worldwide&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=mern%20stack&location=Worldwide&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=next.js&location=Worldwide&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=node.js&location=Worldwide&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=full%20stack%20javascript&location=Worldwide&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react&location=United%20States&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react&location=United%20Kingdom&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react&location=Canada&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=node.js&location=Germany&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react&location=Singapore&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=mern%20stack&location=Australia&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react&location=Netherlands&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=next.js&location=United%20Arab%20Emirates&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react%20native&location=Worldwide&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=frontend%20developer&location=Worldwide&f_WT=2&sortBy=DD"
+      ]
+    },
+    "dataanalyst": {
+      "label": "Data Analyst",
+      "icon": "📊",
+      "urls": [
+        "https://www.linkedin.com/jobs/search/?keywords=data%20analyst&location=Worldwide&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=data%20analyst&location=India&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=data%20analyst&location=United%20States&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=data%20analyst&location=United%20Kingdom&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=data%20analyst&location=Canada&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=data%20analyst&location=Germany&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=data%20analyst&location=Singapore&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=data%20analyst&location=Australia&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=data%20analyst&location=United%20Arab%20Emirates&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=business%20analyst&location=Worldwide&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=sql%20data%20analyst&location=Worldwide&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=python%20data%20analyst&location=Worldwide&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=power%20bi%20analyst&location=Worldwide&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=tableau%20analyst&location=Worldwide&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=excel%20data%20analyst&location=Worldwide&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react&location=Worldwide&f_E=2&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=mern%20stack&location=Worldwide&f_E=2&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=node.js&location=Worldwide&f_E=2&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=next.js&location=Worldwide&f_E=2&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=frontend%20developer&location=Worldwide&f_E=2&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=javascript&location=Worldwide&f_E=2&f_WT=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react&location=India&f_E=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=mern%20stack&location=India&f_E=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react&location=United%20States&f_E=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react&location=United%20Kingdom&f_E=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=node.js&location=Canada&f_E=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react%20intern&location=Worldwide&f_E=1&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=frontend%20intern&location=India&f_E=1&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=web%20developer%20fresher&location=India&f_E=2&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?keywords=react&location=Worldwide&f_E=2&f_TPR=r2592000&sortBy=DD"
+      ]
+    }
+  }
+}
