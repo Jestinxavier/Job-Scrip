@@ -138,6 +138,8 @@
     .btn-remove:hover  { background: #fde68a; }
     .btn-restore { background: #ede9fe; color: #5b21b6; }
     .btn-restore:hover { background: #ddd6fe; }
+    .btn-secondary { background: #f1f5f9; color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { background: #e2e8f0; color: var(--text); }
 
     .loader, .empty-state {
       text-align: center; padding: 3rem 1rem;
@@ -542,6 +544,26 @@
 
   <div id="toast"></div>
 
+  <!-- ── Confirm Apply Modal ── -->
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="modal" style="max-width: 420px; text-align: center;">
+      <div class="modal-header" style="justify-content: center; position: relative;">
+        <h2>Confirm Application</h2>
+        <button class="modal-close" onclick="closeConfirmModal()" style="position: absolute; right: 1.2rem; top: 1.2rem;">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem; gap: 1.2rem;">
+        <div style="font-size: 2.2rem;">📨</div>
+        <p id="confirm-modal-text" style="margin: 0; font-size: 0.95rem; line-height: 1.5; color: var(--text);">
+          Did you successfully apply for this job?
+        </p>
+        <div style="display: flex; gap: 0.75rem; width: 100%; margin-top: 0.5rem;">
+          <button class="btn btn-apply" id="btn-confirm-yes" style="padding: 0.6rem; font-size: 0.85rem; border-radius: 6px;">Yes, I applied</button>
+          <button class="btn btn-secondary" onclick="closeConfirmModal()" style="padding: 0.6rem; font-size: 0.85rem; border-radius: 6px;">No, not yet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ─── State ────────────────────────────────────────────────────────────────
     let allJobs       = [];
@@ -552,6 +574,7 @@
     let profileUrls   = [];       // editable copy of selected profile's URLs
     let pollInterval  = null;
     let lastLogCount  = 0;
+    let pendingApplyJob = null;   // holds job being applied to for confirmation modal
 
     // ─── Time parsing ─────────────────────────────────────────────────────────
     // Convert LinkedIn relative time strings like "2 hours ago" → hours (number)
@@ -728,12 +751,66 @@
       });
     }
 
-    async function applyToJob(id, link) {
+    function applyToJob(id, link) {
+      const job = allJobs.find(j => j.id === id);
+      if (!job) return;
+
+      // Open LinkedIn URL in a new tab
       window.open(link, '_blank');
-      const idx = allJobs.findIndex(j => j.id===id);
-      if (idx>-1) { allJobs[idx].applied=true; allJobs[idx].rejected=false; }
-      updateCounts(); renderJobs(); showToast('✅ Marked as applied!');
-      await fetch('/api/jobs/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+
+      // Keep track of which job is pending confirmation
+      pendingApplyJob = { id, link, title: job.title, company: job.company };
+
+      // Open confirmation modal
+      openConfirmModal(job);
+    }
+
+    function openConfirmModal(job) {
+      const textEl = document.getElementById('confirm-modal-text');
+      if (textEl) {
+        textEl.innerHTML = `Did you successfully apply for <br><strong>${job.title}</strong> at <strong>${job.company}</strong>?`;
+      }
+      
+      const modal = document.getElementById('confirm-modal');
+      if (modal) {
+        modal.classList.add('open');
+      }
+
+      // Hook up Yes button click
+      const yesBtn = document.getElementById('btn-confirm-yes');
+      if (yesBtn) {
+        yesBtn.onclick = confirmApplied;
+      }
+    }
+
+    function closeConfirmModal() {
+      const modal = document.getElementById('confirm-modal');
+      if (modal) {
+        modal.classList.remove('open');
+      }
+      pendingApplyJob = null;
+    }
+
+    async function confirmApplied() {
+      if (!pendingApplyJob) return;
+      const { id } = pendingApplyJob;
+
+      closeConfirmModal();
+
+      const idx = allJobs.findIndex(j => j.id === id);
+      if (idx > -1) {
+        allJobs[idx].applied = true;
+        allJobs[idx].rejected = false;
+      }
+      updateCounts();
+      renderJobs();
+      showToast('✅ Marked as applied!');
+
+      await fetch('/api/jobs/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
     }
     async function rejectJob(id, wasApplied) {
       const idx = allJobs.findIndex(j => j.id===id);
@@ -761,6 +838,9 @@
     }
     document.getElementById('scrape-modal').addEventListener('click', e => {
       if (e.target===e.currentTarget) closeScrapeModal();
+    });
+    document.getElementById('confirm-modal').addEventListener('click', e => {
+      if (e.target===e.currentTarget) closeConfirmModal();
     });
 
     // ─── Profile loading ──────────────────────────────────────────────────────
